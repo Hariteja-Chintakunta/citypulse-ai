@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+venv/
+*.pyc
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Python / FastAPI
+backend/.env
+backend/*.db
+*.egg-info/
+.pytest_cache/
+
+# Playwright
+automation/test-results/
+automation/playwright-report/
+automation/playwright/.cache/
+
+# Environment and secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
