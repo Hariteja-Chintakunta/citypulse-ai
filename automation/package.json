@@ -1,0 +1,1 @@
+{"description":"CityPulse AI — Playwright end-to-end tests for TC01–TC20 (Blueprint section 10)","devDependencies":{"@playwright/test":"^1.44.0","@types/node":"^20.12.0","typescript":"^5.4.5"},"name":"citypulse-ai-automation","private":true,"scripts":{"test":"playwright test","test:ui":"playwright test --ui"},"version":"1.0.0"}
