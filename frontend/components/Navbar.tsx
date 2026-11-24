@@ -36,6 +36,9 @@ export default function Navbar() {
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/map">City map</Link>
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/alerts">Alerts</Link>
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/leaderboard">Leaderboard</Link>
+          {signedIn && (
+            <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/rewards">My Rewards</Link>
+          )}
           {isAdmin && (
             <Link className="rounded bg-brand-accent px-3 py-2 font-semibold text-black hover:bg-amber-400" href="/admin">Admin</Link>
           )}
