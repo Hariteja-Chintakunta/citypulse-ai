@@ -27,6 +27,7 @@ export default function ReportPage() {
   const [category, setCategory] = useState<Category>("Pothole");
   const [description, setDescription] = useState("");
   const [ward, setWard] = useState(WARDS[0]);
+  const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
   const [matches, setMatches] = useState<DuplicateMatch[]>([]);
@@ -107,6 +108,7 @@ export default function ReportPage() {
       address: `${ward} (location picked on map)`,
       latitude: wardCoords[0],
       longitude: wardCoords[1],
+      reporter_email: email.trim() || undefined,
     });
     setTicket(created);
     setPoints(addPoints(50));
@@ -196,6 +198,29 @@ export default function ReportPage() {
             </p>
           </div>
 
+          <div className="rounded border border-amber-200 bg-amber-50 p-3">
+            <p className="text-sm font-medium">Your email — optional</p>
+            <p className="text-xs text-gray-600">
+              We will resolve this within 3 days. If we are late, you earn
+              1,000 points for every day we are late, plus a promo code you
+              can use on government challan / bill payments. Give your email
+              only if you want the promo code sent to you.
+            </p>
+            <div className="mt-2">
+              <label className="text-sm font-medium" htmlFor="email-input">Email (optional)</label>
+              <input
+                id="email-input"
+                data-testid="email-input"
+                type="email"
+                autoComplete="email"
+                className="mt-1 w-full rounded border bg-white px-3 py-2"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
           {formError && <p role="alert" className="text-sm text-red-700">{formError}</p>}
 
           <button type="submit" data-testid="submit-report" disabled={analysing} className="rounded bg-brand-teal px-5 py-2 font-semibold text-white hover:bg-teal-700 disabled:opacity-60">
@@ -232,6 +257,11 @@ export default function ReportPage() {
           <p className="text-sm text-green-900">
             Track it any time from the home page or the map. You earned +50 points
             {points > 0 ? ` (your total: ${points})` : ""}.
+          </p>
+          <p className="mt-1 text-sm text-green-900">
+            We will resolve this within 3 days. If we are late, you earn
+            1,000 points for every day we are late, plus a promo code for
+            challan / bill payments — see it on the ticket page.
           </p>
           <div className="mt-4 flex justify-center gap-3">
             <Link href={`/complaints/${ticket.id}`} className="rounded bg-brand-teal px-4 py-2 font-semibold text-white">
