@@ -6,8 +6,8 @@
  * pretends to be the live backend.
  */
 
-import { getComplaints, saveComplaint, updateComplaintStatus } from "./store";
-import type { AiResult, Category, Complaint, DuplicateMatch } from "./types";
+import { getComplaints, getHistory,  saveComplaint, updateComplaintStatus } from "./store";
+import type { AiResult, Category, Complaint, DuplicateMatch, StatusHistoryItem } from "./types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -65,6 +65,40 @@ export async function register(
 export async function listComplaints(): Promise<Complaint[]> {
   if (isDemoMode()) return getComplaints();
   return request<Complaint[]>("/complaints");
+}
+
+/** Load the list, live when signed in, demo store otherwise.
+ * Falls back to the demo store if the live request fails (for example an
+  * expired token), so the pages always show something. */
+export async function loadComplaints(): Promise<Complaint[]> {
+  if (isDemoMode()) return getComplaints();
+  try {
+    return await listComplaints();
+  } catch {
+    return getComplaints();
+  }
+}
+
+/** One ticket by id, live when signed in, demo store otherwise. */
+export async function getComplaint(id: string): Promise<Complaint | null> {
+  if (isDemoMode()) return getComplaints().find((c) => c.id === id) ?? null;
+  try {
+    return await request<Complaint>(`/complaints/${id}`);
+  } catch {
+    return getComplaints().find((c) => c.id === id) ?? null;
+  }
+}
+
+/** Status timeline for one ticket, live when signed in. */
+export async function getComplaintHistory(
+  id: string,
+  ): Promise<StatusHistoryItem[]> {
+  if (isDemoMode()) return getHistory(id);
+  try {
+    return await request<StatusHistoryItem[]>(`/complaints/${id}/history`);
+  } catch {
+    return getHistory(id);
+  }
 }
 
 export async function createComplaint(input: {
