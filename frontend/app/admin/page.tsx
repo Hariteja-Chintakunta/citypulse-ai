@@ -206,9 +206,8 @@ export default function AdminPage() {
             <h3 className="font-semibold">Quality — AI review</h3>
             <p className="mt-1 text-sm text-gray-700">
               Low-confidence AI outputs are routed to human review (threshold
-              70%). In the demo data, CP-2026-0002 (58%) and CP-2026-0012 (69%)
-              are flagged for human review; CP-2026-0011 was merged as a
-              duplicate of CP-2026-0001.
+              70). Reports the AI is unsure about appear in the review queue
+              above until an admin verifies them.
             </p>
           </div>
         </section>
