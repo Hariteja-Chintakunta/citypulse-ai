@@ -24,8 +24,8 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="border-t bg-white px-4 py-6 text-center text-sm text-gray-600">
-          CityPulse AI — CityFix Buildathon (Tutedude), Hyderabad. Demo data is
-          clearly labelled. No government affiliation is claimed.
+                    CityPulse AI — CityFix Buildathon (Tutedude), Hyderabad. No
+          government affiliation is claimed.
         </footer>
       </body>
     </html>
