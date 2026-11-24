@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { DEMO_ALERTS } from "../../lib/demoData";
 import type { AlertItem } from "../../lib/types";
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<AlertItem[]>(DEMO_ALERTS);
+  // No seeded alerts: the list starts empty and only shows alerts
+  // citizens report from this page.
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [kind, setKind] = useState<"rain" | "traffic">("rain");
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
@@ -19,7 +20,7 @@ export default function AlertsPage() {
       id: `local-${Date.now()}`,
       kind,
       title: title.trim(),
-      detail: `${detail.trim()} (Demo data)`,
+      detail: detail.trim(),
       ward,
       created_at: new Date().toISOString(),
     };
@@ -38,7 +39,10 @@ export default function AlertsPage() {
       </p>
 
       <section aria-label="Current alerts">
-        <ul className="space-y-2">
+      {alerts.length === 0 ? (
+      <p className="text-sm text-gray-600">No alerts right now — be the first to report one below.</p>
+      ) : (
+          <ul className="space-y-2">
           {alerts.map((a) => (
             <li key={a.id} data-testid="alert-item" className="rounded-lg border bg-white p-4">
               <p className="font-semibold">
@@ -52,6 +56,7 @@ export default function AlertsPage() {
             </li>
           ))}
         </ul>
+      )}
       </section>
 
       <section aria-label="Report an alert" className="rounded-lg border bg-white p-4">
