@@ -19,7 +19,7 @@ from app import models, schemas
 from app.api.deps import get_current_user
 from app.core import config
 from app.core.database import get_db
-from app.services import duplicate_service
+from app.services import duplicate_service, reward_service
 
 router = APIRouter(prefix="/complaints", tags=["complaints"])
 
@@ -43,6 +43,13 @@ def _ticket_no(db: Session) -> str:
 
 def _to_out(complaint: models.Complaint) -> schemas.ComplaintOut:
     location = complaint.location
+    # Live reward math (read-only here; the promo code itself is only
+    # generated on the reward endpoints). Resolved tickets accrue up to
+    # their last update, which is the resolution write.
+    end = complaint.updated_at if complaint.status == "RESOLVED" else None
+    days, points, value = reward_service.compute_reward(
+        complaint.created_at, complaint.status, resolved_at=end,
+    )
     return schemas.ComplaintOut(
         id=str(complaint.id),
         ticket_no=complaint.ticket_no,
@@ -56,6 +63,13 @@ def _to_out(complaint: models.Complaint) -> schemas.ComplaintOut:
         longitude=location.longitude if location else None,
         is_demo=complaint.is_demo,
         created_at=complaint.created_at,
+        reporter_phone=complaint.reporter_phone,
+        reporter_email=complaint.reporter_email,
+        sla_deadline=complaint.sla_deadline,
+        reward_points=points,
+        promo_code=complaint.promo_code,
+        promo_value_inr=value,
+        days_overdue=days,
     )
 
 
@@ -86,7 +100,10 @@ def create_complaint(
     user: models.User = Depends(get_current_user),
 ):
     """TC03 / TC05 / TC10 — create a complaint with image metadata, category
-    and location (all mandatory; validated by the schema)."""
+    and location (all mandatory; validated by the schema). The 3-day
+    resolution SLA starts at creation; phone / email are optional and are
+    only used to send the promo code if the report goes overdue."""
+    now = datetime.utcnow()
     complaint = models.Complaint(
         ticket_no=_ticket_no(db),
         user_id=user.id,
@@ -96,6 +113,9 @@ def create_complaint(
         severity="Medium",
         ward=payload.ward,
         address=payload.location.address,
+        reporter_phone=(payload.reporter_phone or None),
+        reporter_email=(payload.reporter_email or None),
+        sla_deadline=reward_service.sla_deadline(now),
     )
     db.add(complaint)
     db.flush()
@@ -167,6 +187,23 @@ def get_complaint(
     user: models.User = Depends(get_current_user),
 ):
     return _to_out(_get_owned_or_admin(db, complaint_id, user))
+
+
+@router.get("/{complaint_id}/reward", response_model=schemas.RewardOut)
+def get_reward(
+    complaint_id: str,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Overdue reward for one ticket (owner or admin only).
+
+    Recomputes the points, generates the promo code the first time the
+    ticket is overdue, and reports whether the code is new — the frontend
+    uses that flag to email the code once to the reporter's email.
+    """
+    complaint = _get_owned_or_admin(db, complaint_id, user)
+    reward, _ = reward_service.refresh_reward(db, complaint)
+    return schemas.RewardOut(**reward)
 
 
 @router.get("/{complaint_id}/history",

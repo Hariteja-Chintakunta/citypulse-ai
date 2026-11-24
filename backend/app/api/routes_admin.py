@@ -13,7 +13,7 @@ from app import models, schemas
 from app.api.deps import require_admin
 from app.core.database import get_db
 from app.core.workflow import is_transition_allowed, reason_required_for
-from app.services import notification_service
+from app.services import notification_service, reward_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -64,6 +64,10 @@ def update_status(
         db, complaint=complaint, new_status=payload.new_status
     )
     location = complaint.location
+    end = complaint.updated_at if complaint.status == "RESOLVED" else None
+    days, points, value = reward_service.compute_reward(
+        complaint.created_at, complaint.status, resolved_at=end,
+    )
     return schemas.ComplaintOut(
         id=str(complaint.id),
         ticket_no=complaint.ticket_no,
@@ -77,4 +81,11 @@ def update_status(
         longitude=location.longitude if location else None,
         is_demo=complaint.is_demo,
         created_at=complaint.created_at,
+        reporter_phone=complaint.reporter_phone,
+        reporter_email=complaint.reporter_email,
+        sla_deadline=complaint.sla_deadline,
+        reward_points=points,
+        promo_code=complaint.promo_code,
+        promo_value_inr=value,
+        days_overdue=days,
     )
