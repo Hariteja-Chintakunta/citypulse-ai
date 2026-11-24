@@ -1,14 +1,25 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import CityMap from "../components/CityMap";
 import ComplaintCard from "../components/ComplaintCard";
 import { DEMO_ALERTS } from "../lib/demoData";
 import { getComplaints } from "../lib/store";
-import { isDemoMode } from "../lib/api";
-
-export const dynamic = "force-dynamic";
+import { isDemoMode, loadComplaints } from "../lib/api";
+import type { Complaint } from "../lib/types";
 
 export default function HomePage() {
-  const complaints = getComplaints();
+  // Demo store first so the page never renders empty; replaced with live
+  // data once loaded when the user is signed in.
+  const [complaints, setComplaints] = useState<Complaint[]>(() => getComplaints());
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    setLive(!isDemoMode());
+    loadComplaints().then(setComplaints).catch(() => {});
+  }, []);
   const total = complaints.length;
   const resolved = complaints.filter((c) => c.status === "RESOLVED").length;
   const open = complaints.filter(
@@ -35,7 +46,7 @@ export default function HomePage() {
       </section>
 
       <section aria-label="Community metrics" className="grid grid-cols-3 gap-3 text-center">
-        <div className="rounded-lg border bg-white p-4"><p className="text-2xl font-bold" data-testid="metric-total">{total}</p><p className="text-sm text-gray-600">Reports (demo)</p></div>
+        <div className="rounded-lg border bg-white p-4"><p className="text-2xl font-bold" data-testid="metric-total">{total}</p><p className="text-sm text-gray-600">Reports {live ? "(live)" : "(demo)"}</p></div>
         <div className="rounded-lg border bg-white p-4"><p className="text-2xl font-bold" data-testid="metric-open">{open}</p><p className="text-sm text-gray-600">Open</p></div>
         <div className="rounded-lg border bg-white p-4"><p className="text-2xl font-bold" data-testid="metric-resolved">{resolved}</p><p className="text-sm text-gray-600">Resolved</p></div>
       </section>
