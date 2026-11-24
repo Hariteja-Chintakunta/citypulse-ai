@@ -22,7 +22,7 @@ def list_notifications(
         .all()
     )
     return [schemas.NotificationOut(
-        id=r.id, message=r.message, read_at=r.read_at,
+        id=str(r.id), message=r.message, read_at=r.read_at,
         created_at=r.created_at,
     ) for r in rows]
 
@@ -48,6 +48,6 @@ def mark_read(
     db.commit()
     db.refresh(row)
     return schemas.NotificationOut(
-        id=row.id, message=row.message, read_at=row.read_at,
+        id=str(row.id), message=row.message, read_at=row.read_at,
         created_at=row.created_at,
     )
