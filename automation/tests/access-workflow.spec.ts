@@ -54,12 +54,13 @@ test("TC13 — reject invalid status transitions", async ({ request }) => {
     (c: { status: string }) => c.status === "SUBMITTED",
   );
   expect(submitted).toBeTruthy();
-  // SUBMITTED -> RESOLVED is not an allowed transition.
+  // SUBMITTED -> IN PROGRESS skips steps and is not an allowed transition.
+  // (Admins may resolve directly: SUBMITTED -> RESOLVED is allowed.)
   const res = await request.patch(
     `${API_URL}/admin/complaints/${submitted.id}/status`,
     {
       headers: { Authorization: `Bearer ${adminToken}` },
-      data: { new_status: "RESOLVED" },
+      data: { new_status: "IN PROGRESS"  },
     },
   );
   expect(res.status()).toBe(422);
