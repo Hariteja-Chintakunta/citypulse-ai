@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import Link from "next/link";
-import { isDemoMode } from "../lib/api";
+import { getRole, getToken, logout } from "../lib/api";
 
 export default function Navbar() {
-  const [live, setLive] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    setLive(!isDemoMode());
+    setSignedIn(Boolean(getToken()));
+    setIsAdmin(getRole() === "admin");
   }, []);
-  
+
+  function handleSignOut() {
+    logout();
+    window.location.assign("/");
+  }
+
   return (
     <header className="bg-brand-dark text-white">
       <nav
@@ -30,13 +36,18 @@ export default function Navbar() {
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/map">City map</Link>
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/alerts">Alerts</Link>
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/leaderboard">Leaderboard</Link>
-          <Link className="rounded bg-brand-accent px-3 py-2 font-semibold text-black hover:bg-amber-400" href="/admin">Admin</Link>
+          {isAdmin && (
+            <Link className="rounded bg-brand-accent px-3 py-2 font-semibold text-black hover:bg-amber-400" href="/admin">Admin</Link>
+          )}
+          {signedIn ? (
+            <button type="button" onClick={handleSignOut} className="rounded px-3 py-2 hover:bg-teal-800">Sign out</button>
+          ) : (
+            <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/login">Sign in</Link>
+          )}
         </div>
       </nav>
       <p className="bg-amber-100 px-4 py-1 text-center text-xs text-amber-900">
-        {live
-            ? "Live data — reports are stored in the CityPulse database. No government affiliation is claimed."
-          : "Demo data — all issues shown are clearly labelled demo data. No government affiliation is claimed."}
+        Live data — reports are stored in the CityPulse database. No government affiliation is claimed.
       </p>
     </header>
   );
