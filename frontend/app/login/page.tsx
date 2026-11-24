@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { login, register } from "../../lib/api";
+import { getRole, login, register } from "../../lib/api";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -24,6 +26,9 @@ export default function LoginPage() {
         await login(email, password);
         setMessage("Signed in.");
       }
+      // Separate portals: admins go to the admin portal, everyone else
+      // to the citizen (user) portal.
+      router.push(getRole() === "admin" ? "/admin" : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed.");
     }
