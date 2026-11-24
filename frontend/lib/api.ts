@@ -6,7 +6,7 @@
  * pretends to be the live backend.
  */
 
-import { getComplaints, getHistory,  saveComplaint, updateComplaintStatus } from "./store";
+import { getComplaints, getHistory, saveComplaint, updateComplaintStatus } from "./store";
 import type { AiResult, Category, Complaint, DuplicateMatch, StatusHistoryItem } from "./types";
 
 const API_URL =
