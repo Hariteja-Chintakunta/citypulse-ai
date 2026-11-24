@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     routes_admin, routes_ai, routes_analytics, routes_auth,
     routes_complaints, routes_leaderboard, routes_map, routes_notifications,
+    routes_rewards,
 )
 from app.core import config
 from app.core.database import Base, engine
@@ -42,6 +43,7 @@ app.include_router(routes_map.router, prefix="/api/v1")
 app.include_router(routes_analytics.router, prefix="/api/v1")
 app.include_router(routes_notifications.router, prefix="/api/v1")
 app.include_router(routes_leaderboard.router, prefix="/api/v1")
+app.include_router(routes_rewards.router, prefix="/api/v1")
 
 
 @app.get("/health")
