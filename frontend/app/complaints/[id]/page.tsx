@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import StatusTimeline from "../../../components/StatusTimeline";
-import { getComplaints, getHistory } from "../../../lib/store";
+import { getComplaint, getComplaintHistory, isDemoMode } from "../../../lib/api";
 import type { Complaint, StatusHistoryItem } from "../../../lib/types";
 
 export default function ComplaintDetailPage() {
@@ -14,16 +14,24 @@ export default function ComplaintDetailPage() {
   const [history, setHistory] = useState<StatusHistoryItem[]>([]);
 
   useEffect(() => {
-    const found = getComplaints().find((c) => c.id === id) ?? null;
-    setComplaint(found);
-    if (found) {
-      const h = getHistory(id);
-      setHistory(
-        h.length > 0
+    let cancelled = false;
+    (async () => {
+      const found = await getComplaint(id);
+      if (cancelled) return;
+      setComplaint(found);
+      if (found) {
+        const h = await getComplaintHistory(id);
+        if (cancelled) return;
+        setHistory(
+          h.length > 0
           ? h
-          : [{ old_status: null, new_status: found.status, remarks: "Report created by citizen. (Demo data)", created_at: found.created_at }],
-      );
-    }
+          : [{ old_status: null, new_status: found.status, remarks: isDemoMode() ? "Report created by citizen. (Demo data)" : "Report created by citizen.", created_at: found.created_at }],
+          );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (!complaint) {
@@ -31,7 +39,8 @@ export default function ComplaintDetailPage() {
       <div className="mx-auto max-w-2xl">
         <p>Loading…</p>
         <p className="text-sm text-gray-600">
-          If this ticket does not appear, it may not exist in demo data.{" "}
+          If this ticket does not appear, it may not exist, or log in to see
+          live tickets.{" "}
           <Link href="/" className="font-semibold text-brand-teal">Back to home</Link>
         </p>
       </div>
