@@ -7,7 +7,7 @@
  */
 
 import { getComplaints, getHistory, saveComplaint, updateComplaintStatus } from "./store";
-import type { AiResult, Category, Complaint, DuplicateMatch, StatusHistoryItem } from "./types";
+import type { AiResult, Category, Complaint, DuplicateMatch, LeaderboardEntry, StatusHistoryItem } from "./types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -48,6 +48,43 @@ export async function login(email: string, password: string): Promise<void> {
   });
   window.localStorage.setItem("citypulse.token", data.access_token);
   window.localStorage.setItem("citypulse.api", "live");
+  // Resolve the role so the app can show the right portal (admin vs user).
+  try {
+    const me = await getMe();
+    window.localStorage.setItem("citypulse.role", me.role);
+    window.localStorage.setItem("citypulse.user", me.name);
+  } catch {
+    window.localStorage.removeItem("citypulse.role");
+    window.localStorage.removeItem("citypulse.user");
+  }
+}
+
+/** Signed-in user's profile, including role ("admin" or "citizen"). */
+export async function getMe(): Promise<{
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}> {
+  return request("/auth/me");
+}
+
+export function getRole(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("citypulse.role");
+}
+
+export function getUserName(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("citypulse.user");
+}
+
+export function logout(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("citypulse.token");
+  window.localStorage.removeItem("citypulse.api");
+  window.localStorage.removeItem("citypulse.role");
+  window.localStorage.removeItem("citypulse.user");
 }
 
 export async function register(
@@ -192,7 +229,35 @@ export async function findDuplicates(input: {
   });
   return request<DuplicateMatch[]>(`/complaints/duplicates?${params}`);
 }
-
+/** Analyse a photo with the backend AI service (POST /ai/analyze).
+ * The service answers live when a vision key is configured and falls back
+ * to its clearly-labelled mock analyser otherwise; the returned `mode`
+ * field says which one ran and the panel shows it. On a provider failure
+ * the backend answers 502/503 with a fail-soft result (confidence 0,
+ * human review required) — that result is returned, not thrown. */
+export async function analyzeImage(input: File | string): Promise<AiResult> {
+  const form = new FormData();
+  if (typeof input === "string") {
+    form.append("filename", input);
+  } else {
+    form.append("file", input);
+  }
+  const token = getToken();
+  const res = await fetch(`${API_URL}/ai/analyze`, {
+    method: "POST",
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if ((res.status === 502 || res.status === 503) && body.predicted_category) {
+      return body as AiResult;
+    }
+    throw new Error(body.detail ?? `AI analysis failed: ${res.status}`);
+  }
+  return body as AiResult;
+}
+ 
 export function haversineM(
   lat1: number, lon1: number, lat2: number, lon2: number,
 ): number {
@@ -204,44 +269,4 @@ export function haversineM(
   const a =
     Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
   return 2 * r * Math.asin(Math.sqrt(a));
-}
-
-/** Client-side mock AI — mirrors backend/app/services/ai_service.py.
- * Used only in demo mode; labelled mode: "mock". */
-export function mockAnalyse(filename: string): AiResult {
-  const lowered = filename.toLowerCase();
-  const hints: Array<[string, Category, number, string, string]> = [
-    ["pothole", "Pothole", 0.92, "High", "Dark cavity in road surface with broken edges"],
-    ["garbage", "Garbage", 0.85, "Medium", "Waste spilling from an overflowing bin"],
-    ["streetlight", "Streetlight", 0.88, "Medium", "Lamp post visible with no light emitted"],
-    ["water", "Waterlogging", 0.95, "High", "Standing water covering the road surface"],
-    ["flood", "Waterlogging", 0.93, "High", "Standing water covering the road surface"],
-    ["traffic", "Traffic Congestion", 0.81, "Medium", "Long queue of vehicles at a junction"],
-    ["footpath", "Footpath", 0.78, "Low", "Broken slabs on the pedestrian footpath"],
-    ["drain", "Drainage", 0.86, "High", "Blocked drain with stagnant water"],
-  ];
-  for (const [keyword, category, confidence, severity, evidence] of hints) {
-    if (lowered.includes(keyword)) {
-      return {
-        predicted_category: category,
-        confidence,
-        suggested_severity: severity as AiResult["suggested_severity"],
-        visible_evidence: evidence,
-        needs_human_review: confidence < 0.7,
-        model_version: "citypulse-vision-mock-v1",
-        analysed_at: new Date().toISOString(),
-        mode: "mock",
-      };
-    }
-  }
-  return {
-    predicted_category: "Pothole",
-    confidence: 0.62,
-    suggested_severity: "Medium",
-    visible_evidence: "Road surface damage visible in photo",
-    needs_human_review: true,
-    model_version: "citypulse-vision-mock-v1",
-    analysed_at: new Date().toISOString(),
-    mode: "mock",
-  };
 }
