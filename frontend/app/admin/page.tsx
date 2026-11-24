@@ -1,21 +1,43 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import CityMap from "../../components/CityMap";
 import ComplaintCard from "../../components/ComplaintCard";
 import { getComplaints } from "../../lib/store";
-import { isDemoMode, loadComplaints, updateStatus } from "../../lib/api";
+import { getMe, getRole, getToken, isDemoMode, loadComplaints, updateStatus } from "../../lib/api";
 import { NEXT_STATUS } from "../../lib/types";
 import type { Complaint, ComplaintStatus } from "../../lib/types";
 
 export default function AdminPage() {
   const [complaints, setComplaints] = useState<Complaint[]>(() => getComplaints());
   const [live, setLive] = useState(false);
+  // Admin portal is password-gated: only a signed-in admin may see it.
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+
+    useEffect(() => {
+      (async () => {
+        if (!getToken()) {
+          setAllowed(false);
+          return;
+        }
+        let role = getRole();
+        if (!role) {
+          try {
+            role = (await getMe()).role;
+          } catch {
+            role = null;
+          }
+        }
+        setAllowed(role === "admin");
+      })();
+    }, []);
 
   useEffect(() => {
+    if (allowed !== true) return;
     setLive(!isDemoMode());
     loadComplaints().then(setComplaints).catch(() => {});
-  }, []);
+  }, [allowed]);
   
   const [selectedId, setSelectedId] = useState<string>("");
   const [newStatus, setNewStatus] = useState<ComplaintStatus>("UNDER REVIEW");
@@ -84,6 +106,32 @@ export default function AdminPage() {
     }
   }
 
+    if (allowed === null) {
+      return (
+        <div className="mx-auto max-w-2xl space-y-4">
+        <p>Checking access…</p>
+        </div>
+        );
+    }
+
+    if (!allowed) {
+      return (
+        <div className="mx-auto max-w-2xl space-y-4">
+          <h1 className="text-2xl font-bold">Admin portal</h1>
+          <p className="text-sm text-gray-700">
+          This area is for CityPulse admins only. Sign in with an admin
+          account and its password to continue.
+          </p>
+          <Link href="/login" className="inline-block rounded bg-brand-teal px-4 py-2 font-semibold text-white">
+            Sign in as admin
+          </Link>
+          <p className="text-sm">
+          <Link href="/" className="font-semibold text-brand-teal">Back to the citizen portal</Link>
+          </p>
+        </div>
+        );
+    }
+        
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Admin dashboard</h1>
