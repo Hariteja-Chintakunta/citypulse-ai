@@ -1,6 +1,17 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
+import { isDemoMode } from "../lib/api";
 
 export default function Navbar() {
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    setLive(!isDemoMode());
+  }, []);
+  
   return (
     <header className="bg-brand-dark text-white">
       <nav
@@ -23,7 +34,9 @@ export default function Navbar() {
         </div>
       </nav>
       <p className="bg-amber-100 px-4 py-1 text-center text-xs text-amber-900">
-        Demo data — all issues shown are clearly labelled demo data. No government affiliation is claimed.
+        {live
+            ? "Live data — reports are stored in the CityPulse database. No government affiliation is claimed."
+          : "Demo data — all issues shown are clearly labelled demo data. No government affiliation is claimed."}
       </p>
     </header>
   );
