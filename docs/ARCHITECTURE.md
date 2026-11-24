@@ -121,6 +121,10 @@ AI response fields: `predicted_category`, `confidence`,
 SUBMITTED → UNDER REVIEW → VERIFIED → IN PROGRESS → RESOLVED
 ```
 
+Admins may also resolve a ticket directly from any open status
+(SUBMITTED, UNDER REVIEW, VERIFIED) instead of walking it through every
+step.
+
 `Rejected` and `Duplicate-merged` are separate outcomes and must include a
 reason. Transitions are enforced server-side
 (`backend/app/core/workflow.py`). Citizens can view progress but cannot
