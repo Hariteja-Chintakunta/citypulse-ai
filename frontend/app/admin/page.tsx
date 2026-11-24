@@ -1,14 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CityMap from "../../components/CityMap";
 import ComplaintCard from "../../components/ComplaintCard";
-import { getComplaints, updateComplaintStatus } from "../../lib/store";
+import { getComplaints } from "../../lib/store";
+import { isDemoMode, loadComplaints, updateStatus } from "../../lib/api";
 import { NEXT_STATUS } from "../../lib/types";
 import type { Complaint, ComplaintStatus } from "../../lib/types";
 
 export default function AdminPage() {
   const [complaints, setComplaints] = useState<Complaint[]>(() => getComplaints());
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    setLive(!isDemoMode());
+    loadComplaints().then(setComplaints).catch(() => {});
+  }, []);
+  
   const [selectedId, setSelectedId] = useState<string>("");
   const [newStatus, setNewStatus] = useState<ComplaintStatus>("UNDER REVIEW");
   const [remarks, setRemarks] = useState("");
@@ -44,7 +52,7 @@ export default function AdminPage() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
   }, [complaints]);
 
-  function applyUpdate() {
+  async function applyUpdate() {
     setError("");
     setMessage("");
     if (!selected) {
@@ -60,12 +68,19 @@ export default function AdminPage() {
       setError(`A reason is required for ${newStatus}.`);
       return;
     }
-    const updated = updateComplaintStatus(selected.id, newStatus, remarks || undefined, reason || undefined);
-    if (updated) {
-      setComplaints(getComplaints());
-      setMessage(`${updated.ticket_no} moved to ${newStatus}. The citizen is notified (full-stack version).`);
+    try {
+      const updated = await updateStatus(
+        selected.id,
+        newStatus,
+        remarks || undefined,
+        reason || undefined,
+        );
+      setComplaints(await loadComplaints());
+      setMessage(`${updated.ticket_no} moved to ${newStatus}. The citizen is notified.`);
       setRemarks("");
       setReason("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Status update failed.");
     }
   }
 
@@ -74,8 +89,8 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold">Admin dashboard</h1>
       <p className="text-sm text-gray-600">
         Review queue, verification, status updates and quality metrics. Admin
-        actions are enforced server-side in the full-stack version; this demo
-        applies the same transition rules in the browser.
+        actions are enforced server-side in the full-stack version
+        {live ? " — you are viewing live data." : "; this demo applies the same transition rules in the browser."}
       </p>
 
       <section aria-label="Overview" className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
