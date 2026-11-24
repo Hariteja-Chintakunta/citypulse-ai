@@ -31,7 +31,7 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    return schemas.UserOut(id=str(user.id), name=user.name, email=user.email, role=user.role)
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
