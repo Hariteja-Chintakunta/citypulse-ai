@@ -6,7 +6,7 @@ import AiAnalysisPanel from "../../components/AiAnalysisPanel";
 import DuplicateCheck from "../../components/DuplicateCheck";
 import { CATEGORIES, WARD_COORDS, WARDS } from "../../lib/demoData";
 import {
-  createComplaint, findDuplicates, mockAnalyse,
+    analyzeImage, createComplaint, findDuplicates,
 } from "../../lib/api";
 import { addPoints } from "../../lib/store";
 import type {
@@ -20,8 +20,10 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export default function ReportPage() {
   const [step, setStep] = useState<Step>("form");
-  const [photoName, setPhotoName] = useState("");
+    const [photoName, setPhotoName] = useState("");
+  const [photoInput, setPhotoInput] = useState<File | string | null>(null);
   const [photoError, setPhotoError] = useState("");
+  const [analysing, setAnalysing] = useState(false);
   const [category, setCategory] = useState<Category>("Pothole");
   const [description, setDescription] = useState("");
   const [ward, setWard] = useState(WARDS[0]);
@@ -47,11 +49,12 @@ export default function ReportPage() {
       return;
     }
     setPhotoName(file.name);
-    setAiResult(mockAnalyse(file.name));
+        setPhotoInput(file);
+    setAiResult(null);
   }
 
-  function handleAnalyse() {
-    if (!photoName) {
+  async function handleAnalyse() {
+    if (!photoInput) {
       setPhotoError("Please attach a photo first.");
       return;
     }
@@ -60,6 +63,27 @@ export default function ReportPage() {
       return;
     }
     setFormError("");
+    setAnalysing(true);
+    try {
+      // The backend AI service analyses the photo. Until a vision key is
+      // configured it answers with its clearly-labelled mock analyser and
+      // the panel shows "mode: mock".
+      setAiResult(await analyzeImage(photoInput));
+    } catch {
+      // Backend unreachable: route to human review rather than guessing.
+      setAiResult({
+        predicted_category: category,
+        confidence: 0,
+        suggested_severity: "Medium",
+        visible_evidence: "AI unavailable — human review required",
+        needs_human_review: true,
+        model_version: "citypulse-vision-mock-v1",
+        analysed_at: new Date().toISOString(),
+        mode: "mock",
+      });
+    } finally {
+      setAnalysing(false);
+    }
     setStep("ai");
   }
 
@@ -120,10 +144,10 @@ export default function ReportPage() {
             {photoName && <p className="text-sm text-teal-800">Attached: {photoName}</p>}
             {photoError && <p role="alert" className="text-sm text-red-700">{photoError}</p>}
             <div className="mt-2 flex gap-2">
-              <button type="button" data-testid="sample-pothole" className="rounded border px-3 py-1 text-sm" onClick={() => { setPhotoName("pothole-sample.jpg"); setAiResult(mockAnalyse("pothole-sample.jpg")); }}>
+              <button type="button" data-testid="sample-pothole" className="rounded border px-3 py-1 text-sm" onClick={() => { setPhotoName("pothole-sample.jpg"); setPhotoInput("pothole-sample.jpg"); setAiResult(null); }}>
                 Use sample: pothole photo
               </button>
-              <button type="button" data-testid="sample-garbage" className="rounded border px-3 py-1 text-sm" onClick={() => { setPhotoName("garbage-sample.jpg"); setAiResult(mockAnalyse("garbage-sample.jpg")); }}>
+              <button type="button" data-testid="sample-garbage" className="rounded border px-3 py-1 text-sm" onClick={() => { setPhotoName("garbage-sample.jpg"); setPhotoInput("garbage-sample.jpg"); setAiResult(null); }}>
                 Use sample: garbage photo
               </button>
             </div>
@@ -174,8 +198,8 @@ export default function ReportPage() {
 
           {formError && <p role="alert" className="text-sm text-red-700">{formError}</p>}
 
-          <button type="submit" data-testid="submit-report" className="rounded bg-brand-teal px-5 py-2 font-semibold text-white hover:bg-teal-700">
-            Analyse photo and continue
+          <button type="submit" data-testid="submit-report" disabled={analysing} className="rounded bg-brand-teal px-5 py-2 font-semibold text-white hover:bg-teal-700 disabled:opacity-60">
+            {analysing ? "Analysing photo…" : "Analyse photo and continue"}
           </button>
         </form>
       )}
@@ -235,7 +259,7 @@ function getTicketFor(match: DuplicateMatch): Complaint {
     address: "",
     latitude: 0,
     longitude: 0,
-    is_demo: true,
+    is_demo: false,
     created_at: new Date().toISOString(),
   };
 }
