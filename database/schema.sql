@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS complaints (
   ward         TEXT NOT NULL,
   address      TEXT,
   is_demo      BOOLEAN NOT NULL DEFAULT FALSE,     -- demo data is labelled
+  -- Optional contact for rewards (promo code is sent here when overdue).
+  reporter_phone TEXT,
+  reporter_email TEXT,
+  -- Overdue rewards: 3-day SLA, 1000 points per overdue day, promo code.
+  sla_deadline          TIMESTAMPTZ,
+  reward_points         INTEGER NOT NULL DEFAULT 0,
+  promo_code            TEXT,
+  promo_code_created_at TIMESTAMPTZ,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -63,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_complaints_status    ON complaints(status);
 CREATE INDEX IF NOT EXISTS idx_complaints_category  ON complaints(category);
 CREATE INDEX IF NOT EXISTS idx_complaints_ward      ON complaints(ward);
 CREATE INDEX IF NOT EXISTS idx_complaints_user      ON complaints(user_id);
+CREATE INDEX IF NOT EXISTS idx_complaints_sla       ON complaints(sla_deadline);
 
 -- --- complaint_media --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS complaint_media (
