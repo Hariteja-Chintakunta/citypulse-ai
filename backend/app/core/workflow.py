@@ -4,12 +4,16 @@ SUBMITTED -> UNDER REVIEW -> VERIFIED -> IN PROGRESS -> RESOLVED.
 REJECTED and DUPLICATE_MERGED are separate outcomes and must include a
 reason. Transitions are enforced server-side; citizens cannot change
 admin-controlled statuses (enforced in the admin router).
+
+Admins may also resolve a ticket directly from any open status
+(SUBMITTED, UNDER REVIEW, VERIFIED) — for example when the fix is already
+confirmed — instead of walking it through every step.
 """
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
-    "SUBMITTED": {"UNDER REVIEW", "REJECTED", "DUPLICATE_MERGED"},
-    "UNDER REVIEW": {"VERIFIED", "REJECTED", "DUPLICATE_MERGED"},
-    "VERIFIED": {"IN PROGRESS", "REJECTED", "DUPLICATE_MERGED"},
+    "SUBMITTED": {"UNDER REVIEW", "REJECTED", "DUPLICATE_MERGED", "RESOLVED"},
+    "UNDER REVIEW": {"VERIFIED", "REJECTED", "DUPLICATE_MERGED", "RESOLVED"},
+    "VERIFIED": {"IN PROGRESS", "REJECTED", "DUPLICATE_MERGED", "RESOLVED"},
     "IN PROGRESS": {"RESOLVED", "REJECTED", "DUPLICATE_MERGED"},
     "RESOLVED": set(),
     "REJECTED": set(),
