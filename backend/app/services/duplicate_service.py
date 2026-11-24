@@ -92,7 +92,7 @@ def find_possible_duplicates(
             2,
         )
         matches.append({
-            "complaint_id": candidate.id,
+            "complaint_id": str(candidate.id),
             "ticket_no": candidate.ticket_no,
             "category": candidate.category,
             "distance_m": round(distance, 1),
