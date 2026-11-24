@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CityMap from "../../components/CityMap";
 import ComplaintCard from "../../components/ComplaintCard";
 import { CATEGORIES } from "../../lib/demoData";
 import { getComplaints } from "../../lib/store";
+import { isDemoMode, loadComplaints } from "../../lib/api";
+import type { Complaint } from "../../lib/types";
 
 export default function MapPage() {
   const [category, setCategory] = useState<string>("All");
-  const all = getComplaints();
+  // Demo store first so the page never renders empty; replaced with live
+  // data once loaded when the user is signed in.
+  const [all, setAll] = useState<Complaint[]>(() => getComplaints());
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    setLive(!isDemoMode());
+    loadComplaints().then(setAll).catch(() => {});
+  }, []);
+  
   const shown = category === "All" ? all : all.filter((c) => c.category === category);
 
   return (
@@ -16,7 +27,7 @@ export default function MapPage() {
       <h1 className="text-2xl font-bold">City map</h1>
       <p className="text-sm text-gray-600">
         Every verified issue as a marker, with category filters. Markers show
-        the exact reported coordinates. Demo data.
+        the exact reported coordinates. {live ? "Live data." : "Demo data."}
       </p>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
