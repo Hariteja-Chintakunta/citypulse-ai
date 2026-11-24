@@ -49,9 +49,6 @@ export const DEMO_ALERTS: AlertItem[] = [
  // the list is empty.
 ];
 export const DEMO_LEADERBOARD: LeaderboardEntry[] = [
-  { name: "Priya Sharma (Demo)", points: 170 },
-  { name: "Kiran Kumar (Demo)", points: 150 },
-  { name: "Meera Nair (Demo)", points: 150 },
-  { name: "Arjun Reddy (Demo)", points: 100 },
-  { name: "Ananya Rao (Demo)", points: 100 },
+  // Demo leaderboard removed 2026-11-24: the page now shows the live
+  // leaderboard from the API. The seeded demo names and points are gone.
 ];

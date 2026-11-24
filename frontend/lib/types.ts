@@ -26,6 +26,32 @@ export interface Complaint {
   longitude: number;
   is_demo: boolean;
   created_at: string;
+  /** Optional contact for rewards (sent with the report, if given). */
+  reporter_phone?: string | null;
+  reporter_email?: string | null;
+  /** 3-day resolution SLA + overdue reward (live-computed by the API). */
+  sla_deadline?: string | null;
+  reward_points?: number;
+  promo_code?: string | null;
+  promo_value_inr?: number;
+  days_overdue?: number;
+}
+
+/** Overdue reward for one ticket (GET /complaints/{id}/reward). */
+export interface Reward {
+  complaint_id: string;
+  ticket_no: string;
+  category: string;
+  status: ComplaintStatus;
+  sla_deadline: string | null;
+  days_overdue: number;
+  reward_points: number;
+  promo_code: string | null;
+  promo_code_created_at: string | null;
+  promo_value_inr: number;
+  promo_code_new: boolean;
+  reporter_email: string | null;
+  reporter_phone: string | null;
 }
 
 export interface StatusHistoryItem {

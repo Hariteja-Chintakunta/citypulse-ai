@@ -6,11 +6,24 @@
  * pretends to be the live backend.
  */
 
-import { getComplaints, getHistory, saveComplaint, updateComplaintStatus } from "./store";
-import type { AiResult, Category, Complaint, DuplicateMatch, LeaderboardEntry, StatusHistoryItem } from "./types";
+import { getComplaints, getHistory, saveComplaint, updateComplaint, updateComplaintStatus } from "./store";
+import type { AiResult, Category, Complaint, DuplicateMatch, LeaderboardEntry, Reward, StatusHistoryItem } from "./types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+
+/** Overdue rewards (mirrors backend reward_service): 3-day SLA, 1000
+ * points per overdue day, 1000 points = Rs 100 off. */
+export const SLA_DAYS = 3;
+export const POINTS_PER_DAY = 1000;
+export const RUPEES_PER_1000_POINTS = 100;
+
+/** Apps Script receiver (the same script that emails new reports) — it
+ * also emails + texts promo codes when a report goes overdue.
+ * Runs under citypulsehyderabad@gmail.com (the app account). */
+const APPS_SCRIPT_URL =
+  process.env.NEXT_PUBLIC_APPS_SCRIPT_URL ??
+  "https://script.google.com/macros/s/AKfycbztjlIc8TLYDXfcioeEvx3PHWLgUVjHvOnMR0j656r8N7YSfBBtY1flC4p2_AprM1dW/exec";
 
 export function isDemoMode(): boolean {
   return (
@@ -138,6 +151,11 @@ export async function getComplaintHistory(
   }
 }
 
+/** Live leaderboard — the endpoint needs no sign-in, so anyone can see it. */
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  return request<LeaderboardEntry[]>("/leaderboard");
+}
+
 export async function createComplaint(input: {
   category: Category;
   description: string;
@@ -145,6 +163,8 @@ export async function createComplaint(input: {
   address: string;
   latitude: number;
   longitude: number;
+  reporter_phone?: string;
+  reporter_email?: string;
 }): Promise<Complaint> {
   if (isDemoMode()) {
     const now = new Date();
@@ -162,6 +182,13 @@ export async function createComplaint(input: {
       longitude: input.longitude,
       is_demo: true,
       created_at: now.toISOString(),
+      reporter_phone: input.reporter_phone ?? null,
+      reporter_email: input.reporter_email ?? null,
+      sla_deadline: new Date(now.getTime() + SLA_DAYS * 86400000).toISOString(),
+      reward_points: 0,
+      promo_code: null,
+      promo_value_inr: 0,
+      days_overdue: 0,
     };
     saveComplaint(complaint);
     return complaint;
@@ -198,6 +225,122 @@ export async function updateStatus(
       reason,
     }),
   });
+}
+
+/** Overdue reward for one ticket, live when signed in, demo-computed
+ * otherwise. The backend generates the promo code on first read once the
+ * ticket is overdue; demo mode does the same locally. */
+export async function getReward(id: string): Promise<Reward | null> {
+  if (isDemoMode()) {
+    const found = getComplaints().find((c) => c.id === id);
+    return found ? demoReward(found) : null;
+  }
+  try {
+    return await request<Reward>(`/complaints/${id}/reward`);
+  } catch {
+    const found = getComplaints().find((c) => c.id === id);
+    return found ? demoReward(found) : null;
+  }
+}
+
+/** The signed-in citizen's reward-earning tickets, richest first. */
+export async function getMyRewards(): Promise<Reward[]> {
+  if (isDemoMode()) {
+    return getComplaints()
+      .map(demoReward)
+      .filter((r) => r.days_overdue > 0 || r.reward_points > 0)
+      .sort((a, b) => b.reward_points - a.reward_points);
+  }
+  try {
+    return await request<Reward[]>("/rewards/me");
+  } catch {
+    return getComplaints()
+      .map(demoReward)
+      .filter((r) => r.days_overdue > 0 || r.reward_points > 0)
+      .sort((a, b) => b.reward_points - a.reward_points);
+  }
+}
+
+/** Demo-mode mirror of backend reward_service: 3-day SLA, 1000 points per
+ * overdue day, code generated once and stored on the local ticket. */
+function demoReward(c: Complaint): Reward {
+  const created = new Date(c.created_at).getTime();
+  const deadline = new Date(created + SLA_DAYS * 86400000);
+  let end = Date.now();
+  if (c.status === "RESOLVED") {
+    const history = getHistory(c.id);
+    const resolved = [...history]
+      .reverse()
+      .find((h) => h.new_status === "RESOLVED");
+    if (resolved) end = new Date(resolved.created_at).getTime();
+  }
+  let days = 0;
+  if (
+    c.status !== "REJECTED" &&
+    c.status !== "DUPLICATE_MERGED" &&
+    end > deadline.getTime()
+  ) {
+    // Full days overdue — points accrue per completed day.
+    days = Math.floor((end - deadline.getTime()) / 86400000);
+  }
+  const points = days * POINTS_PER_DAY;
+  const value =
+    Math.floor(points / POINTS_PER_DAY) * RUPEES_PER_1000_POINTS;
+  let code = c.promo_code ?? null;
+  let codeNew = false;
+  if (points > 0 && !code) {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    code =
+      "CP-RWD-" +
+      Array.from(
+        { length: 6 },
+        () => alphabet[Math.floor(Math.random() * alphabet.length)],
+      ).join("");
+    updateComplaint(c.id, { promo_code: code, reward_points: points });
+    codeNew = true;
+  }
+  return {
+    complaint_id: c.id,
+    ticket_no: c.ticket_no,
+    category: c.category,
+    status: c.status,
+    sla_deadline: deadline.toISOString(),
+    days_overdue: days,
+    reward_points: points,
+    promo_code: code,
+    promo_code_created_at: null,
+    promo_value_inr: value,
+    promo_code_new: codeNew,
+    reporter_email: c.reporter_email ?? null,
+    reporter_phone: c.reporter_phone ?? null,
+  };
+}
+
+/** Email a newly generated promo code through the Apps Script Gmail
+ * sender (the same script that emails new reports). Fire-and-forget:
+ * false when the script is unreachable — the code stays visible in the
+ * app either way. SMS is off by the owner's choice (email only); the
+ * script skips the text when no SMS key is configured. */
+export async function sendPromoCodeEmail(input: {
+  ticket_no: string;
+  category: string;
+  points: number;
+  promo_code: string;
+  value_inr: number;
+  email: string;
+  phone?: string | null;
+}): Promise<boolean> {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "reward", ...input }),
+    });
+    const body = await res.json().catch(() => ({}));
+    return body.ok === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function findDuplicates(input: {

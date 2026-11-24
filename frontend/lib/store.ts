@@ -52,6 +52,18 @@ export function saveComplaint(complaint: Complaint): void {
   write(HISTORY_KEY, history);
 }
 
+export function updateComplaint(
+  id: string,
+  patch: Partial<Complaint>,
+): Complaint | null {
+  const all = getComplaints();
+  const target = all.find((c) => c.id === id);
+  if (!target) return null;
+  const updated: Complaint = { ...target, ...patch };
+  write(COMPLAINTS_KEY, [updated, ...all.filter((c) => c.id !== id)]);
+  return updated;
+}
+
 export function updateComplaintStatus(
   id: string,
   newStatus: Complaint["status"],
