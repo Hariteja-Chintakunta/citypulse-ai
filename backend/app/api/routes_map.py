@@ -34,7 +34,7 @@ def map_issues(
         query = query.filter(models.Complaint.ward == ward)
     return [
         schemas.MapIssueOut(
-            id=c.id, ticket_no=c.ticket_no, category=c.category,
+            id=str(c.id), ticket_no=c.ticket_no, category=c.category,
             status=c.status, latitude=loc.latitude, longitude=loc.longitude,
             ward=c.ward,
         )
