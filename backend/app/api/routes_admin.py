@@ -65,7 +65,7 @@ def update_status(
     )
     location = complaint.location
     return schemas.ComplaintOut(
-        id=complaint.id,
+        id=str(complaint.id),
         ticket_no=complaint.ticket_no,
         category=complaint.category,
         description=complaint.description,
