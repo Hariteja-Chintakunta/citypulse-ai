@@ -13,18 +13,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/me", response_model=schemas.UserOut)
 def read_me(user: models.User = Depends(get_current_user)):
-      """Return the signed-in user's profile, including role.
-  
-      The frontend uses this after sign-in to decide which portal to show:
-      the admin portal requires role "admin"; everyone else uses the
-      citizen (user) portal.
-      """
-  return schemas.UserOut(
+    """Return the signed-in user's profile, including role.
+
+    The frontend uses this after sign-in to decide which portal to show:
+    the admin portal requires role "admin"; everyone else uses the
+    citizen (user) portal.
+    """
+    return schemas.UserOut(
         id=str(user.id), name=user.name, email=user.email, role=user.role
-  )
+    )
 
 
-  @router.post("/register", response_model=schemas.UserOut,
+@router.post("/register", response_model=schemas.UserOut,
              status_code=status.HTTP_201_CREATED)
 def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     """TC01 — register a new citizen with valid details."""
