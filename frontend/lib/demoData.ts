@@ -44,12 +44,10 @@ export const DEMO_COMPLAINTS: Complaint[] = [
   ];
 
 export const DEMO_ALERTS: AlertItem[] = [
-  { id: "a1", kind: "rain", title: "Waterlogging alert — Secunderabad", detail: "Heavy rain reported near MG Road underpass. Avoid the stretch if possible. (Demo data)", ward: "Secunderabad", created_at: "2026-11-22T08:00:00+05:30" },
-  { id: "a2", kind: "rain", title: "Waterlogging alert — Banjara Hills", detail: "Water collecting near Road No. 4 school entrance. (Demo data)", ward: "Banjara Hills", created_at: "2026-11-22T07:55:00+05:30" },
-  { id: "a3", kind: "traffic", title: "Congestion — Kukatpally Metro", detail: "Slow-moving traffic reported near the metro station exit. (Demo data)", ward: "Kukatpally", created_at: "2026-11-21T18:10:00+05:30" },
-  { id: "a4", kind: "traffic", title: "Congestion — Begumpet Junction", detail: "Long queues reported at the junction signal. (Demo data)", ward: "Begumpet", created_at: "2026-11-21T17:30:00+05:30" },
+    // Demo alerts removed 2026-11-24: the app shows no mock data. Alerts
+ // are citizen-reported from the Alerts page; until someone reports one,
+ // the list is empty.
 ];
-
 export const DEMO_LEADERBOARD: LeaderboardEntry[] = [
   { name: "Priya Sharma (Demo)", points: 170 },
   { name: "Kiran Kumar (Demo)", points: 150 },
