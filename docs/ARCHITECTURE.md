@@ -128,7 +128,30 @@ step.
 `Rejected` and `Duplicate-merged` are separate outcomes and must include a
 reason. Transitions are enforced server-side
 (`backend/app/core/workflow.py`). Citizens can view progress but cannot
-change admin-controlled statuses.
+change admin-controlled statuses. Admins may resolve a ticket directly
+from any open status (SUBMITTED / UNDER REVIEW / VERIFIED / IN PROGRESS).
+
+## Overdue rewards (3-day SLA)
+
+Every report gets 3 days to be resolved (`sla_deadline = created_at +
+3 days`, `backend/app/services/reward_service.py`).
+
+- From the day after the deadline, the reporter earns **1,000 points per
+  overdue day** until the ticket is resolved; accrual freezes at the
+  resolution time (taken from the audit history). REJECTED and
+  DUPLICATE_MERGED tickets earn nothing.
+- When points first become greater than zero, a promo code is generated
+  (`CP-RWD-XXXXXX`). Demo value: **1,000 points = Rs 100 off** on
+  government challan / bill payments.
+- The report form collects **phone number and email — optional only**.
+  When a code is first generated, the app emails it to the reporter
+  through the Apps Script Gmail sender (`CityPulse_Report_Script_Hariteja.gs`,
+  `action: "reward"`); the code is also shown on the ticket page and on
+  **My Rewards** (`GET /rewards/me`, `GET /complaints/{id}/reward`).
+- Honest limits: the code is a **demo concept** — no government payment
+  integration exists, so it cannot be used on a real payment portal yet.
+  SMS delivery is not wired either: sending a text needs a provider
+  (Twilio / MSG91); the phone number is collected and stored meanwhile.
 
 ## Deployment
 
