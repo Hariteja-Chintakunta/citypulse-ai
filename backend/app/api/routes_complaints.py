@@ -44,7 +44,7 @@ def _ticket_no(db: Session) -> str:
 def _to_out(complaint: models.Complaint) -> schemas.ComplaintOut:
     location = complaint.location
     return schemas.ComplaintOut(
-        id=complaint.id,
+        id=str(complaint.id),
         ticket_no=complaint.ticket_no,
         category=complaint.category,
         description=complaint.description,
@@ -268,6 +268,6 @@ def add_comment(
     db.commit()
     db.refresh(comment)
     return schemas.CommentOut(
-        id=comment.id, user_name=user.name,
+        id=str(comment.id), user_name=user.name,
         comment=comment.comment, created_at=comment.created_at,
     )
