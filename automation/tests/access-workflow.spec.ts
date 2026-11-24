@@ -60,7 +60,7 @@ test("TC13 — reject invalid status transitions", async ({ request }) => {
     `${API_URL}/admin/complaints/${submitted.id}/status`,
     {
       headers: { Authorization: `Bearer ${adminToken}` },
-      data: { new_status: "IN PROGRESS"  },
+      data: { new_status: "IN PROGRESS" },
     },
   );
   expect(res.status()).toBe(422);
