@@ -24,7 +24,8 @@ DO $$ BEGIN
     'Traffic Congestion', 'Footpath', 'Drainage', 'Other',
     'Traffic Police Challan', 'Wrong-Way Driving', 'Chemical Factory Pollution',
     'Political Complaint', 'Drainage Overflow', 'Rainwater Harvesting',
-    'Water Conservation'
+    'Water Conservation',
+  'Road Damage', 'Traffic', 'Safety'
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
