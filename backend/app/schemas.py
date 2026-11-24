@@ -59,6 +59,10 @@ class ComplaintCreate(BaseModel):
     ward: str
     location: LocationIn
     ai_analysis_id: str | None = None
+    # Optional contact for rewards: the promo code is sent here when the
+    # report goes past its 3-day deadline. Either, both, or neither.
+    reporter_phone: str | None = Field(default=None, max_length=20)
+    reporter_email: EmailStr | None = None
 
     @field_validator("category")
     @classmethod
@@ -88,6 +92,14 @@ class ComplaintOut(BaseModel):
     longitude: float | None
     is_demo: bool
     created_at: datetime
+    # Overdue rewards (live-computed; see reward_service).
+    reporter_phone: str | None = None
+    reporter_email: str | None = None
+    sla_deadline: datetime | None = None
+    reward_points: int = 0
+    promo_code: str | None = None
+    promo_value_inr: int = 0
+    days_overdue: int = 0
 
 
 class StatusHistoryOut(BaseModel):
@@ -182,3 +194,20 @@ class NotificationOut(BaseModel):
 class LeaderboardEntry(BaseModel):
     name: str
     points: int
+
+
+# --- Overdue rewards --------------------------------------------------------
+class RewardOut(BaseModel):
+    complaint_id: str
+    ticket_no: str
+    category: str
+    status: str
+    sla_deadline: datetime | None
+    days_overdue: int
+    reward_points: int
+    promo_code: str | None
+    promo_code_created_at: datetime | None
+    promo_value_inr: int
+    promo_code_new: bool = False
+    reporter_email: str | None
+    reporter_phone: str | None

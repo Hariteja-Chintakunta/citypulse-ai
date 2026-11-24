@@ -52,6 +52,18 @@ class Complaint(Base):
     ward: Mapped[str] = mapped_column(String(100), nullable=False)
     address: Mapped[str | None] = mapped_column(Text)
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Optional contact for rewards (phone / email are optional on the
+    # report form; the promo code is sent there when given).
+    reporter_phone: Mapped[str | None] = mapped_column(String(20))
+    reporter_email: Mapped[str | None] = mapped_column(String(200))
+    # Overdue rewards: 3-day resolution SLA, 1000 points per overdue day,
+    # promo code generated the first time points become greater than zero.
+    sla_deadline: Mapped[datetime | None] = mapped_column(DateTime)
+    reward_points: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    promo_code: Mapped[str | None] = mapped_column(String(20))
+    promo_code_created_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
     )
