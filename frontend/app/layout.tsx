@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CityPulse AI — Your city. Your voice. Your impact.",
+  title: "CityPulse AI — Our city. Our voice. Our impact.",
   description:
     "AI-powered platform to report, understand, track and improve urban issues in Hyderabad. CityFix Buildathon (Tutedude).",
 };
