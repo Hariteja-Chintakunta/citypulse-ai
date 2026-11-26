@@ -28,7 +28,7 @@ export default function Navbar() {
           CityPulse AI
         </Link>
         <span className="hidden text-sm text-teal-200 sm:inline">
-          Your city. Your voice. Your impact.
+          Our city. Our voice. Our impact.
         </span>
         <div className="ml-auto flex flex-wrap gap-1 text-sm">
           <Link className="rounded px-3 py-2 hover:bg-teal-800" href="/">Home</Link>
