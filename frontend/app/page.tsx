@@ -27,7 +27,7 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section className="rounded-xl bg-brand-dark p-6 text-white sm:p-10">
-        <h1 className="text-3xl font-bold sm:text-4xl">Your city. Your voice. Your impact.</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Our city. Our voice. Our impact.</h1>
         <p className="mt-3 max-w-2xl text-teal-100">
           Report a city problem with a photo. AI suggests what it is, the
           platform checks for duplicates, and you can track your ticket until
